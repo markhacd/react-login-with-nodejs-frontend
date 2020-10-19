@@ -1,26 +1,104 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect } from 'react';
+import { observer } from 'mobx-react'
+import UserStore from './stores/UserStore';
+import LoginFrom from './components/LoginForm';
+import SubmitButton from './components/SubmitButton'
+export default observer(() => {
+  useEffect(() => {
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+    async function fetchData() {
+      try {
+        let res = await fetch('/isLoggedIn', {
+          method: 'post',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+  
+        let result = await res.json();
+  
+        if (result && result.success) {
+          UserStore.loading = false;
+          UserStore.isLoggedIn = true;
+          UserStore.username = result.username;
+  
+  
+        } else {
+          UserStore.loading = false;
+          UserStore.isLoggedIn = false;
+        }
+  
+      } catch (e) {
+        UserStore.loading = false;
+        UserStore.isLoggedIn = false;
+      }
+    }
+    fetchData();
+  }, [])
 
-export default App;
+  const doLogout = async () => {
+    try {
+      let res = await fetch('/logout', {
+        method: 'post',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      let result = await res.json();
+
+      if (result && result.success) {
+        UserStore.isLoggedIn = false;
+        UserStore.username = '';
+
+
+      } else {
+        UserStore.loading = false;
+        UserStore.isLoggedIn = false;
+      }
+
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  
+  if(UserStore.loading){
+    return (
+      <>
+      <div>
+        Loading, please wait..
+      </div>
+      
+      </>
+    );
+  } else {
+    if (UserStore.isLoggedIn) {
+      return (
+        <>
+        <div>
+          Welcome { UserStore.username }
+          <SubmitButton
+          text={'Logout'}
+          disabled={false}
+          onClick={ () => doLogout() }
+          />
+        </div>
+        
+        </>
+      );
+    } else {
+      
+    }
+    return (
+      <>
+      <div>
+        <LoginFrom />
+      </div>
+      
+      </>
+    );
+  }
+  
+});
